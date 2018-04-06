@@ -1,0 +1,35 @@
+
+
+
+#!/usr/bin/env python
+#import platform, subprocess, re
+import sys
+import os
+import socket
+import subprocess
+
+
+
+p = subprocess.Popen("yum update -y", stdout=subprocess.PIPE, shell=True)
+(output , err) = p.communicate()
+print (output)
+p = subprocess.Popen("yum --enablerepo=epel -y install docker-io", stdout=subprocess.PIPE, shell=True)
+(output , err) = p.communicate()
+print (output)
+
+p=subprocess.Popen("/etc/rc.d/init.d/docker start", stdout=subprocess.PIPE, shell=True)
+(output , err) = p.communicate()
+print (output)
+
+p = subprocess.Popen("docker pull ubuntu", stdout=subprocess.PIPE, shell=True)
+(output , err) = p.communicate()
+print (output)
+
+
+p = subprocess.Popen("systemctl start docker", stdout=subprocess.PIPE, shell=True)
+(output , err) = p.communicate()
+print (output)
+
+
+ 
+

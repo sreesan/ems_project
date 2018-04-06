@@ -1,0 +1,10 @@
+
+
+---
+ - hosts: all 
+   sudo: emusr
+   gather_facts: yes
+   serial: 1
+   roles:
+     - kafka_add_new-client
+   

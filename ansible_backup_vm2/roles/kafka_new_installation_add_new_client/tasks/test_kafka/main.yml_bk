@@ -1,0 +1,95 @@
+---
+- name: creating kafka directory
+  file: path=/opt/ems/kafka state=directory mode=755 owner=kafka group=kafka
+
+- name: getting kafka tar file
+  #become_user: yes
+  become_user: kafka
+  copy: src=kafka_2.12-0.11.0.1.tgz  dest=/opt/ems/kafka mode=755 owner=kafka
+
+- name: registering the file
+  sudo_user: kafka
+  stat:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+  register: stat_result
+  ignore_errors: true
+
+- name: untar the file if it doesn't exist
+  sudo_user: kafka
+  unarchive: src=/opt/ems/kafka/kafka_2.12-0.11.0.1.tgz  dest=/opt/ems/kafka owner=kafka
+  when: stat_result.stat.exists == False
+  ignore_errors: true
+
+- name: Change permissions and owner of file.
+ # sudo: yes
+  file:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+    mode: 0755
+    owner: kafka
+    group: lance
+    recurse: yes
+
+- name: copying zookeeper.properties file into kafka cluster configuration file
+  sudo_user: kafka
+  template: src=zookeeper.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/zookeeper.properties
+
+- name: copying server.properties file into kafka cluster configuration file
+  sudo_user: kafka
+  template: src=server.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/server.properties
+
+- name: copying producer.properties file into kafka cluster configuration file
+  sudo_user: kafka
+  template: src=producer.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/producer.properties
+
+- name: copying consumer.properties file into kafka cluster configuration file
+  sudo_user: kafka
+  template: src=consumer.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/consumer.properties
+
+- name: create directory for zookeeper
+  sudo_user: kafka
+  file: path=/opt/ems/kafka/{{ kafka_version }}/zookeeper  state=directory
+
+- name: coping myid file into target systems
+  sudo_user: kafka
+  template: src=myid.j2  dest=/opt/ems/kafka/{{ kafka_version }}/zookeeper/myid
+
+#- name: start and test zookeeper server
+#  script: zk.sh
+
+- name: Check zookeeper service
+  sudo_user: kafka
+  shell: ps -ef|grep -v grep | grep zookeeper.properties|wc -l
+  register: result
+
+- debug: msg="{{result.stdout}}"
+
+- name: Start zookeeper.properties if not started already
+  sudo_user: kafka
+  shell: bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
+  args:
+    chdir: /opt/ems/kafka/kafka_2.12-0.11.0.1
+  when: result.stdout == "0"
+
+- name: modifying a file related to bin
+  sudo_user: kafka
+  replace: dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/bin/kafka-server-start.sh  regexp='export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"' replace='export KAFKA_HEAP_OPTS="-Xmx256M -Xms128M"'
+  ignore_errors: true
+
+#- name: start and test kafka server
+#  script: kf.sh
+
+- name: Check kafka service
+  sudo_user: kafka
+  shell: ps -ef|grep -v grep | grep server.properties|wc -l
+  register: result
+
+- debug: msg="{{result.stdout}}"
+
+- name: Start server.properties if not started already
+  sudo_user: kafka
+  shell: bin/kafka-server-start.sh -daemon config/server.properties
+  args:
+    chdir: /opt/ems/kafka/kafka_2.12-0.11.0.1
+  when: result.stdout == "0"
+
+...

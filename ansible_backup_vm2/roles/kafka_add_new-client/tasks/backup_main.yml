@@ -1,0 +1,260 @@
+---
+#- name: check kafka services 
+
+- name: checking the user
+  sudo_user: emusr
+  raw: id emusr 
+  register: user
+  ignore_errors: true
+
+- name: executing the block
+  sudo_user: emusr
+  block:
+     - name: sending the mail if emusr is not exist in server
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body="emuser not  exist in {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: user.rc >= 1
+
+     - name: end the playbook if emusr is not exist in server
+       sudo_user: emusr
+       meta: end_play
+       when: user.rc >= 1
+
+- name: gettng kafka files to run kafka services
+  copy: src=kafka   dest=/etc/init.d  owner=root   mode=0777
+
+- name: getting zookeeper file for zookeeper service
+  copy: src=zookeeper dest=/etc/init.d   owner=root mode=0777
+
+#- name: check zookeeper service file whether the file is exist or not
+#  sudo_user: emusr
+#  stat:
+#    path: /etc/init.d/zookeeper
+#  register: zk_result
+
+#- name: Check zookeeper service
+#  sudo_user: emusr
+#  raw: service zookeeper status
+#  register: zk
+#  when: zk_result.stat.exists == True
+#  ignore_errors: true
+
+- name: find hostname
+  raw: hostname
+  register: host
+
+- debug: msg="{{ host.stdout }}"
+
+#- name: executing the block to send notification if zookeeper is already running
+#  sudo_user: emusr
+#  block:
+#     - name: sending the mail
+#       local_action: mail
+#                     to="sreenu@synopsys.com"
+#                     from="sreenu@synopsys.com"
+#                     subject="Adding new client into kafka cluster"
+#                     body="zookeeper service is already running on {{ ansible_nodename }}"
+#       delegate_to: localhost
+#       when: (host.stdout == "indckafka4\r\n" or host.stdout == "indckafka4\n") and (zk.stdout == "zookeeper is running\n" or zk.stdout == "zookeeper is running\r\n") 
+
+#     - name: Stop the playbook execution process if zookeeper is running on server
+#       sudo_user: emusr
+#       meta: end_play
+#       when: (host.stdout == "indckafka4\r\n" or host.stdout == "indckafka4\n") and (zk.stdout == "zookeeper is running\n" or zk.stdout == "zookeeper is running\r\n") 
+
+- name: check kafka service file path
+  stat:
+    path: /etc/init.d/kafka
+  register: zk_result
+
+#- name: Check kafka service
+#  sudo_user: emusr
+#  raw: service kafka status
+#  register: kf
+#  ignore_errors: true
+
+#- name: executing the block to send notification if kafka services are already running
+#  sudo_user: emusr
+#  block:
+#     - name: sending the mail if kafka services are already running
+#       local_action: mail
+#                     to="sreenu@synopsys.com"
+#                     from="sreenu@synopsys.com"
+#                     subject="Adding new client into kafka cluster notification"
+#                     body="playbook has been stopped due to kafka services are already running on {{ ansible_nodename }}"
+#       delegate_to: localhost
+#       when: host.stdout == "indckafka4\r\n" or host.stdout == "indckafka4\n" and (kf.stdout == "kafka is running\n" or kf.stdout == "kafka is running\r\n")
+#
+#     - name: Stop the playbook execution process if kafka is running on server
+#       sudo_user: emusr
+#       meta: end_play
+#       when: host.stdout == "indckafka4\r\n" or host.stdout == "indckafka4\n" and (kf.stdout == "kafka is running\n" or kf.stdout == "kafka is running\r\n")
+
+- name: gettng kafka files to run kafka services
+  copy: src=kafka   dest=/etc/init.d  owner=root   mode=0777
+
+- name: getting zookeeper file for zookeeper service
+  copy: src=zookeeper dest=/etc/init.d   owner=root mode=0777
+
+- name: Check deployment path for kafka
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka
+  register: stat_result
+
+- name: Create the directory, if it is already not exist
+  sudo_user: emusr 
+  file: path=/opt/ems/kafka  state=directory
+  when: stat_result.stat.exists == False  
+
+- name: check kafka tar file
+  sudo_user: emusr
+  stat:
+   path: /opt/ems/kafka/kafka_2.12-0.11.0.1.tgz
+  register: stat_result1
+
+- name: deploying kafka tar file if it is not allready there
+  sudo_user: emusr
+  copy: src=kafka_2.12-0.11.0.1.tgz  dest=/opt/ems/kafka mode=0755 owner=emusr group=synopsys
+  when: stat_result1.stat.exists == False
+
+- name: registering the file to untar the tar file if already not present
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+  register: stat_result2
+  ignore_errors: true
+
+- name: untar the file if it is not exist already
+  sudo_user: emusr
+  unarchive: src=/opt/ems/kafka/kafka_2.12-0.11.0.1.tgz  dest=/opt/ems/kafka owner=emusr
+  when: stat_result2.stat.exists == False
+
+- name: Change permissions and owner of kafka file.
+  sudo_user: emusr
+  file:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+    mode: 0755
+    owner: emusr
+    group: synopsys
+    recurse: yes
+
+- name: copying zookeeper.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=zookeeper.properties.j2  dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/config/zookeeper.properties      
+
+- name: copying server.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=server.properties.j2  dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/config/server.properties
+
+- name: copying producer.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=producer.properties.j2  dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/config/producer.properties
+
+- name: copying consumer.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=consumer.properties.j2  dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/config/consumer.properties
+
+- name: creating kafka log directory
+  file: path=/SCRATCH/kafka/kafka-logs state=directory  owner=emusr  group=synopsys  mode=0755
+
+- name: Check symbolic link is exists or not
+  sudo_user: emusr
+  stat: path=/opt/ems/kafka/current
+  register: links
+
+- name: Create symlink if link is not exist already
+  sudo_user: emusr
+  file: 
+    src: /opt/ems/kafka/kafka_2.12-0.11.0.1 
+    dest: /opt/ems/kafka/current
+    state: link
+    owner: emusr
+    group: synopsys
+    mode: 0755
+#  when: links.stat.exists == False
+
+- name: Check wether directory name called zookepper is exists or not in kafka in kafka main directory
+  sudo_user: emusr
+  stat: path=/opt/ems/kafka/kafka_2.12-0.11.0.1/zookeeper
+  register: check_zkdir
+
+- name: create directory for zookeeper
+  sudo_user: emusr
+  file: path=/opt/ems/kafka/kafka_2.12-0.11.0.1/zookeeper  state=directory  owner=emusr group=synopsys mode=0755
+  when: check_zkdir.stat.exists == False
+
+- name: coping myid file into target systems
+  sudo_user: emusr
+  template: src=myid.j2  dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/zookeeper/myid
+
+- name: modifying a file related to bin
+  sudo_user: emusr
+  replace: dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/bin/kafka-server-start.sh regexp='export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"'  replace='export KAFKA_HEAP_OPTS="-Xmx256M -Xms128M"'
+  ignore_errors: true
+
+- name: Check zookeeper service
+  sudo_user: emusr
+  raw: service zookeeper status
+  register: zk.service
+  when: host.stdout != "indckafka4\r\n" or host.stdout != "indckafka4\n"  
+  ignore_errors: true
+
+- name: stop the zookeeper services
+  sudo_user: emusr
+  service: name=zookeeper  state=stopped enabled=yes
+  when: host.stdout != "indckafka4\r\n" or host.stdout != "indckafka4\n"
+
+- name: Start zookeeper service once add new client into cluster
+  sudo_user: emusr
+  service: name=zookeeper  state=restarted  enabled=yes
+#  raw: service zookeeper start
+#  when: zk.service.stdout == "zookeeper is not running\r\n"
+
+- name: Check kafka service
+  sudo_user: emusr
+  raw: service kafka status
+  register: kf.service
+  when: host.stdout != "indckafka4\r\n" or host.stdout != "indckafka4\n"
+  ignore_errors: true
+
+- name: stop kafka services if services are already running
+  sudo_user: emusr
+  service: name=kafka  state=stopped  enabled=yes
+  when: host.stdout != "indckafka4\r\n" or host.stdout != "indckafka4\n"
+
+- name: Start kafka services if not started already
+  sudo_user: emusr
+  service: name=kafka  state=restarted  enabled=yes  
+#  raw: service kafka start
+#  when: kf.service.stdout == "kafka is not running\r\n"
+
+- name: Check zookeeper service
+  sudo_user: emusr
+  raw: service zookeeper status
+  register: zr
+  ignore_errors: true
+
+- name: Check kafka service
+  sudo_user: emusr
+  raw: service kafka status
+  register: kr
+  ignore_errors: true
+
+- name: send email notification if adding new client into kafka cluster process is success 
+  sudo_user: emusr
+  block:
+     - name: sending the mail regarding the new client addition into kafka cluster if it success
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka Deployment Succes notification"
+                     body="added new client into kafka cluster and now kafka and zookeeper services are running successfully on {{ ansible_nodename}}"
+       delegate_to: localhost
+  when: zr.stdout == "zookeeper is running\n" or zr.stdout == "zookeeper is running\r\n" and (kr.stdout == "kafka is running\n" or kr.stdout == "kafka is running\r\n") 
+  ignore_errors: true
+  

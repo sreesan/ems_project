@@ -1,0 +1,8 @@
+
+
+---
+ - hosts: in01-kafka-servers 
+   become_user: kafka
+   roles:
+     - kafka
+   

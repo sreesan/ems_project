@@ -1,0 +1,24 @@
+
+
+
+
+---
+ - hosts: all
+   tasks:
+    - name: copying file to nodes
+      copy: src=/etc/ansible/playbooks/syslogs/info2.py  dest=/root
+
+    - name: executing shell
+      shell: /usr/bin/python info2.py | tee -a  /root/mysysinfo.log
+
+    - name: fetching log file
+#      synchronize: src=/root/mysysinfo.log  dest=/tmp/logs/  mode=pull
+      fetch: src=/root/mysysinfo.log  dest=/tmp/logs/  mode=pull
+
+    - name: delete the files 
+      file: path=/root/info2.py  state=absent
+
+    - name: delete logfile from root
+      file: path=/root/mysysinfo.log  state=absent
+
+...

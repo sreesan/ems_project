@@ -1,0 +1,22 @@
+
+
+---
+ - hosts: cloud
+   tasks:
+   - name: Update the /etc/ssh/sshd_config file
+     lineinfile: 
+       dest: /etc/ssh/sshd_config
+       regexp: "^PasswordAuthentication no"
+       line: "PasswordAuthentication yes"
+       insertafter: EOF
+       state: present
+     register: ssh_config
+    
+   - name: Restart ssh
+     service:
+       name: sshd
+       state: restarted
+     when: ssh_config.changed
+
+   - name: creating password for user called ec2-user
+     user: name=ec2-user password=abc123

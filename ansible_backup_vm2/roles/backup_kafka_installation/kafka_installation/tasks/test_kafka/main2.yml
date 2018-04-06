@@ -1,0 +1,34 @@
+---
+- name: creating kafka directory
+  file: path=/opt/ems/kafka state=directory mode=755 owner=kafka group=kafka
+
+- name: getting kafka tar file
+  #become_user: yes
+  become_user: kafka
+  copy: src={{ kafka_version }}.tgz  dest=/opt/ems/kafka mode=755 owner=kafka
+
+- name: registering the file
+  sudo_user: kafka
+  stat:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+  register: stat_result
+  ignore_errors: true
+
+- name: untar the file if it doesn't exist
+  sudo_user: kafka
+  unarchive: src=/opt/ems/kafka/{{ kafka_version }}.tgz  dest=/opt/ems/kafka owner=kafka
+  when: stat_result.stat.exists == False
+  ignore_errors: true
+
+- name: Change permissions and owner of file.
+ # sudo: yes
+  file:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+    mode: 0755
+    owner: kafka
+    group: lance
+    recurse: yes
+
+- name: copying zookeeper.properties file into kafka cluster configuration file
+  sudo_user: kafka
+  template: src=zookeeper.properties.j2  dest=/opt/ems/kafka/{{ zookeeperconnect }}/config/zookeeper.properties

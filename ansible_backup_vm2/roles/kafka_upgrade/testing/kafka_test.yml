@@ -1,0 +1,10 @@
+---
+ - hosts: localhost
+   tasks:
+   - name: Check kafka services
+     sudo_user: emusr
+     raw: service kafka status
+     register: result1
+
+   - debug: msg="{{result1.stdout}}"
+

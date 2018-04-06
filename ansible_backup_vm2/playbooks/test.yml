@@ -1,0 +1,14 @@
+
+
+---
+ - hosts:  10.144.201.226
+   tasks:
+   - name: Creates directory
+     file: path=/root/index.html state=touch
+
+   - name: Creating The File
+     file: path=/root/new  state=touch
+
+   - name: Creating The Directory
+     file: path=/tmp/test  state=directory
+

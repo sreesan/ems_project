@@ -1,0 +1,83 @@
+
+
+---
+ - hosts: kafka
+   tasks:
+   - name: copying python file that should install java1.8 and elasticsearch
+     copy: src=/etc/ansible/playbooks/ems/deploy_elasticsearch/elastic_search.py  dest=/root
+
+   - name: executing python scripting
+     shell: python /root/elastic_search.py
+
+   - name: modifying elasticsearch configuration file
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#node.name: Franz Kafka"
+       line: "node.name: Mynode"
+
+   - name: modifying clustername in same above configuration file
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#cluster.name:  elasticsearch"
+       line: "cluster.name: mycluster"
+
+   - name: modifying node.master in same file
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#node.master: true"
+       line: "node.master: false"
+
+   - name: modifying node.data in conf file 
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#node.data: true"
+       line: "node.data: false"
+
+   - name: modifying #index.number_of_shards: 5 
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#index.number_of_shards: 5"
+       line: "index.number_of_shards: 1"
+
+   - name: modifying index.number_of_replicas
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#index.number_of_replicas: 1"
+       line: "index.number_of_replicas: 0"
+  
+   - name: modifying data path #path.data: /path/to/data
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#path.data: /path/to/data"
+       line: "path.data: /tmp"
+
+   - name: starting elasticsearch service
+     shell: systemctl start elasticsearch.service
+
+   - name: securing server network.bind_host localhost
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^#network.bind_host: 192.168.0.1"
+       line: "network.bind_host: localhost"
+
+   - name: giving entry for disabling custom networks
+     lineinfile:
+       dest: /etc/elasticsearch/elasticsearch.yml
+       regexp: "^# Cluster name identifies your cluster for auto-discovery. If you're running"
+       line: "script.disable_dynamic: true"
+
+   - name: restarting elasticsearch
+     shell: systemctl restart elasticsearch.service
+ 
+   - name: removing python file which was copied to /root directory
+     file: path=/root/elastic_search.py state=absent 
+ 
+...     
+ 
+
+ 
+ 
+
+ 
+ 
+   

@@ -1,0 +1,56 @@
+
+---
+ - hosts: all
+   remote_user: root
+   tasks:
+     - debug: var=ansible_memory_mb
+     - debug: msg="total RAM is {{ ansible_memory_mb.real.total }}"
+     - fail: msg="not enough RAM"
+       when: ansible_memory_mb.real.total < 4096 
+       ignore_errors: yes
+
+     - debug: var=ansible_default_ipv4.address
+     - debug: msg="The IP address of remote systems is {{ansible_default_ipv4.address}}"
+
+     - debug: var=ansible_os_family
+     - debug: msg="OS family of remote systems is {{ansible_os_family}}"
+
+     - name: Check OS Version via /etc/issue
+       shell: cat /etc/issue
+       register: etc_issue
+     - debug: msg="The os version of remote systems is {{etc_issue.stdout_lines}}"
+
+
+     - debug: var=ansible_hostname 
+     - debug: msg="The hostnames required servers is {{ansible_hostname}}"
+
+     - debug: var=ansible_kernel 
+     - debug: msg="The kernel version of given servers is {{ansible_kernel}}"
+
+     - name: Check CPU information
+       shell: inxi -C 
+       register: cpuinfo
+     - debug: msg="The CPU information of remote system is {{cpuinfo.stdout.split('\n')}}"     
+
+#     - shell: lscpu | tee -a /root/mylog.test
+#       register: files_to_copy
+
+#     - name: Fetch stuff from the remote and save to local
+#       synchronize:  src=/root/mylog.test  dest=/tmp/ mode=pull
+
+#     - shell: lscpu | tee -a /root/mylog2.test
+#       register: files_to_copy
+
+
+#     - name: Fetch stuff from the remote and save to local
+#       synchronize:  src=/root/mylog2.test  dest=/tmp/ mode=pull
+
+#     - name: check the physical memory
+#       command: vmstat -s
+#       register: phy_mem
+#     - debug: msg="The memory information is {{phy_mem\n}}"
+
+...
+
+
+

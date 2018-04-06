@@ -1,0 +1,14 @@
+
+
+---
+
+- hosts: dev1
+
+  tasks:
+  - name: Database
+    docker_container:
+     name: database
+     image: docker.io/ubuntu
+     state: started
+...
+

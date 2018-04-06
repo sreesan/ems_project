@@ -1,0 +1,31 @@
+
+---
+ - hosts: localhost 
+   tasks:
+#   - name: check kafka services
+
+   - name: check username as emuser
+     raw: id emuser
+     register: user
+     #failed_when: "'FAILED' in user.stderr" 
+     # -  meta: end_play
+
+   - name: "end play if user is already exist"
+     debug: msg={{ user }} #"can't find emuser, ending play"
+
+   - name: ending play
+     meta: end_play
+     when: user.stdout == ""
+   
+   - debug: msg="displaying the user"
+   
+   - name: Exit if nothing to upgrade
+     fail: msg="Can't able to find username as emuser"
+     when: user is none
+
+   - name: create file
+     file: path=/root/mytest  state=touch
+
+
+
+ 

@@ -1,0 +1,237 @@
+---
+# tasks file for upgrade_kafka
+
+- name: Checking the user as emusr wether it is exist or not
+  sudo_user: emusr
+  raw: id emusr
+  register: user
+  ignore_errors: true
+
+- name: Executing the block to send email notification if emusr is not exist on servers
+  sudo_user: emusr
+  block:
+     - name: Sending the mail if emusr is not exist in server
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body=" emuser not  exist in {{ ansible_nodename }}"
+       delegate_to: localhsot
+       when: user.rc >= 1
+
+     - name: Stop the playbook if emusr is not exist in server
+       meta: end_play
+       when: user.rc >= 1
+
+- name: Registering the variable to send mail if deployment path is not exist
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka
+  register: stat_result
+
+- name: Sending an email notification if kafka deployment path is not exists
+  sudo_user: emusr
+  block:
+     - name: Sending the mail if deployment path is not exist
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka upgrade notification"
+                     body=" kafka deployment path is not exist in {{ ansible_nodename }}"
+       delegate_to: localhsot
+       when: stat_result.stat.exists == False
+
+     - name: Stop the playbook execution if deployment path is not exist
+       meta: end_play
+       when: stat_result.stat.exists == False
+
+
+- name: Register variable to deploy kafka new_version tar file 
+  sudo_user: emusr
+  stat:
+   path: /opt/ems/kafka/kafka_2.12-1.0.0.tgz
+  register: kafka_tar
+
+- name: Deploying kafka tar file if it is already not exist 
+  sudo_user: emusr
+  copy: src=kafka_2.12-1.0.0.tgz  dest=/opt/ems/kafka/ mode=755 owner=emusr group=synopsys
+  when: kafka_tar.stat.exists == False
+
+- name: Registering the variable to untar the file
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka/kafka_2.12-1.0.0.tgz
+  register: stat_result
+  ignore_errors: true
+
+- name: Untar the file if its not exist 
+  sudo_user: emusr
+  unarchive: src=/opt/ems/kafka/kafka_2.12-1.0.0.tgz  dest=/opt/ems/kafka owner=emusr group=synopsys mode=0755
+  when: stat_result.stat.exists == True
+
+- name: Deploying zookeeper.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=zookeeper.properties.j2  dest=/opt/ems/kafka/kafka_2.12-1.0.0/config/zookeeper.properties
+
+- name: Deploying server.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=server.properties.j2  dest=/opt/ems/kafka/kafka_2.12-1.0.0/config/server.properties
+
+- name: Deploying producer.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=producer.properties.j2  dest=/opt/ems/kafka/kafka_2.12-1.0.0/config/producer.properties
+
+- name: Deploying consumer.properties file into kafka cluster configuration file
+  sudo_user: emusr
+  template: src=consumer.properties.j2  dest=/opt/ems/kafka/kafka_2.12-1.0.0/config/consumer.properties
+
+- name: Register the variable for zookeeper directory in new_version kafka file whether it is exist or not 
+  sudo_user: emusr
+  stat: path=/opt/ems/kafka/kafka_2.12-1.0.0/zookeeper
+  register: check_zkdir
+
+- name: Create directory for zookeeper if it is already not exist
+  sudo_user: emusr
+  file: path=/opt/ems/kafka/kafka_2.12-1.0.0/zookeeper  state=directory  owner=emusr group=synopsys mode=0755
+  when: check_zkdir.stat.exists == False
+
+- name: Coping myid file into target systems
+  sudo_user: emusr
+  template: src=myid.j2  dest=/opt/ems/kafka/kafka_2.12-1.0.0/zookeeper/myid
+
+- name: Check kafka services
+  raw: service kafka status
+  register: result1
+  ignore_errors: true
+
+- debug: msg="{{result1.stdout}}"
+
+- name: Stopping kafka service if kafka services are already running
+  service: name=kafka  state=stopped enabled=yes
+  when: result1.stdout == "kafka is running\n" or result1.stdout == "kafka is running\r\n" 
+  ignore_errors: true
+
+- name: Check zookeeper services
+  raw: service zookeeper status
+  register: result2
+  ignore_errors: true
+
+- debug: msg="{{result2.stdout}}"
+
+- name: Stopping zookeeper services if services are already running
+  service: name=zookeeper  state=stopped enabled=yes
+  when: result2.stdout == "zookeeper is running\n" or result2.stdout == "zookeeper is running\r\n"
+  ignore_errors: true
+
+- name: Register the variable to remove link from old version
+  sudo_user: emusr
+  stat: path=/opt/ems/kafka/current
+  register: link
+- name: Remove symlink from old version
+  sudo_user: emusr
+  file:
+    path: /opt/ems/kafka/current
+    state: absent
+  when: link.stat.exists == True
+
+- name: Register variable to create link for new version
+  sudo_user: emusr
+  stat: path=/opt/ems/kafka/current
+  register: links
+#  when: links.stat.islnk is defined and links.stat.islnk
+
+- name: Create symlink for new version
+  sudo_user: emusr
+  file:
+    src: /opt/ems/kafka/kafka_2.12-1.0.0
+    dest: /opt/ems/kafka/current
+    state: link
+    owner: emusr
+    group: synopsys
+  when: links.stat.exists == False
+
+- name: Start zookeeper for new version
+  service: name=zookeeper state=started enabled=yes
+#  when: result3.stdout == "zookeeper is not running\n" or result3.stdout == "zookeeper is not running\r\n"
+
+#- name: Check kafka service
+#  raw: service kafka status
+#  register: result4
+
+#- debug: msg="{{ result4.stdout }}"
+
+- name: Start kafka for new version
+  service: name=kafka state=started  enabled=yes
+#  when: result4.stdout == "kafka is not running\n" or result4.stdout == "kafka is not running\r\n"
+
+- name: Check kafka service from new version
+  raw: service kafka status
+  register: result5
+
+- debug: msg="{{result5.stdout}}"
+
+- name: Check zookeeper service from new version
+  raw: service kafka status
+  register: result6
+
+- debug: msg="{{ result6.stdout }}"
+
+- name: Unlink the latest version if kafka and zookeeper services are not running with new version
+  sudo_user: emusr
+  file:
+    src: /opt/ems/kafka/kafka_2.12-1.0.0
+    dest: /opt/ems/kafka/current
+    state: absent
+    owner: emusr
+    group: synopsys
+    mode: 0755
+  when: result5.stdout == "kafka is not running\n" or result5.stdout == "kafka is not running\r\n" 
+
+- name: Create symlink for old version if the new version is not deployed properly
+  sudo_user: emusr
+  file:
+    src: /opt/ems/kafka/kafka_2.12-0.11.0.1
+    dest: /opt/ems/kafka/current
+    state: link
+    owner: emusr
+    group: synopsys
+    mode: 0755
+  when: result5.stdout == "kafka is not running\n" or result5.stdout == "kafka is not running\r\n" 
+
+- name: start zookeeper from old version
+  service: name=zookeeper state=started enabled=yes
+
+- name: registering the variable to send email notification of kafka upgradation process
+  raw: service zookeeper status
+  register: zk_mail
+
+- name: Restart zookeeper service
+  raw: service zookeeper start
+  when: zk_mail.stdout == "zookeeper is not running\r\n" or zk_mail.stdout == "zookeeper is not running\n"
+
+- name: start kafka from old version
+  service: name=kafka state=started enabled=yes
+
+- name: registering the variable to send email notification of kafka upgradation process
+  raw: service kafka status
+  register: kf_mail
+
+- name: Restart kafka service
+  raw: service kafka start
+  when: kf_mail.stdout == "kafka is not running\r\n" or kf_mail.stdout == "kafka is not running\n"
+
+- name: Sending email upgradation success notification 
+  sudo_user: emusr
+  block:
+     - name: sending the mail
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body=" upgradation process done successfully on {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: (zk_mail.stdout == "zookeeper is running\n" or zk_mail.stdout == "zookeeper is running\r\n") and (kf_mail.stdout == "kafka is running\n" or kf_mail.stdout == "kafka is running\r\n") 
+
+
+
+

@@ -1,0 +1,8 @@
+---
+ - hosts: all
+   tasks: 
+   - name: find hostname
+     raw: hostname
+     register: host
+
+   - debug: msg="{{ host }}" 

@@ -1,0 +1,124 @@
+---
+- name: Check the emusr is present and display output in debug
+  sudo_user: emusr
+  raw: id emusr 
+  register: user
+  ignore_errors: true
+
+- debug: msg="{{ user.stdout }}"
+
+- name: Executing the block to send email notification if emusr is not present
+  sudo_user: emusr
+  block:
+     - name: Send the mail notification if emusr is not present 
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body="emuser not  exist in {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: user.rc >= 1
+
+     - name: Stop the playbook
+       sudo_user: emusr
+       meta: end_play
+       when: user.rc >= 1
+
+- name: Registering the variable to check kafka deployment path and send email notfication if path is not exist 
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka
+  register: stat_result
+
+- name: Executing the block to send mail notification if kafka deployment path is not present
+  sudo_user: emusr
+  block:
+     - name: Send the mail if deployment path is not present
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka deployment path is not present"
+                     body="kafka deployment path is not present in {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: stat_result.stat.exists == False
+
+     - name: Stop the playbook if deployment path is not present
+       sudo_user: emusr
+       meta: end_play
+       when: stat_result.stat.exists == False
+
+- name: Stop kafka service if service is already running
+  sudo_user: emusr
+  service: name=kafka state=started enabled=yes
+  when: inventory_hostname in groups['{{ rtd_grp}}']
+
+- name: Stop zookeeper service if zookeeper is already running
+  sudo_user: emusr
+  service: name=zookeeper state=stopped enabled=yes
+  when: inventory_hostname in groups['{{ rtd_grp}}']
+
+- name: Unlink kafka deployment directory if link is already present
+  sudo_user: emusr
+  file:
+    src: /opt/ems/kafka/kafka/{{kafka_version}}
+    dest: /opt/ems/kafka/current
+    state: absent
+  when: inventory_hostname in groups['{{ rtd_grp}}']
+
+- name: Remove kafka deployment directory 
+  file: path=/opt/ems/kafka  state=absent
+  when: inventory_hostname in groups['{{ rtd_grp}}']
+
+- name: Registering the variable to check kafka deployment path and send email notfication if path is not exist
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka
+  register: dep_path
+
+- name: Stop kafka service for existing servers
+  service: name=kafka state=stopped  enabled=yes
+  when: inventory_hostname in groups['{{ exist_grp}}']
+
+- name: Stop zookeeper service for existing servers
+  service: name=zookeeper  state=stopped  enabled=yes
+  when: inventory_hostname in groups['{{ exist_grp}}']
+
+- name: update config files after client retirement process is done successfully
+  template: src={{ item }}.j2  dest=/opt/ems/kafka/{{kafka_version}}/config/{{ item }}
+  with_items:
+         - zookeeper.properties
+         - server.properties
+         - producer.properties
+         - consumer.properties
+  when: inventory_hostname in groups['{{ exist_grp}}']    
+
+- name: Start zookeeper after update kafka config files
+  service: name=zookeeper  state=started  enabled=yes
+  when: inventory_hostname in groups['{{ exist_grp}}']
+
+- name: Start kafka service after update kafka config files 
+  service: name=kafka state=started enabled=yes
+  when: inventory_hostname in groups['{{ exist_grp}}']
+
+- name: Register variable to check zookeeper service for sending email notification
+  raw: service zookeeper status
+  register: zk
+  when: inventory_hostname in groups['{{ exist_grp}}']
+
+- name: Register variable to check kafka service for sending email notification
+  raw: service kafka status
+  register: kf
+  when: inventory_hostname in groups['{{ exist_grp}}']
+
+- name: Executing the block to send mail notification if the kafka client retirement process is done successfully
+  sudo_user: emusr
+  block:
+     - name: Send an email after kafka client retirement process is done successfully and if services are running 
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka client retirement process success notificarion"
+                     body="kafka client retirement process is done successfully and kafka and zookeeper services are running on {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: zk.stdout == "zookeeper is running\n" or zk.stdout == "zookeeper is running \r\n" and (kf.stdout == "zookeeper is running\n or kf.stdout == "zookeeper is running\r\n")
+

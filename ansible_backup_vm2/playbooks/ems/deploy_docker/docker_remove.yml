@@ -1,0 +1,28 @@
+
+
+
+---
+ - hosts: vm1
+   tasks:
+   - name: stoping docker containers
+     shell: docker stop test 
+
+   - name: removing docker containers
+     shell: docker rm -f test
+     ignore_errors: true
+
+   - name: removing images
+     shell: docker rmi ubuntu
+
+   - name: removing epel repositories
+     raw: yum remove epel-release -y
+
+   - name: removing docker
+     raw: yum remove docker -y
+
+#   - name: removing docker-io
+#     raw: yum remove docker-io -y
+
+   - name: removing docker home directory
+     file: path=/var/lib/docker  state=absent 
+...

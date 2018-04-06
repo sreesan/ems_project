@@ -1,0 +1,42 @@
+---
+ - hosts: localhost
+   tasks:
+   - name: Check zookeeper service
+     sudo_user: emusr
+     raw: service zookeeper status
+     register: zk
+     ignore_errors: true
+
+   - debug: msg="{{ zk.stdout }}"
+
+#   - name: Start zookeeper service if not started already
+#     sudo_user: emusr
+#     raw: service zookeeper start
+#  when: zk.service.stdout == "zookeeper is not running\n" or zk.service.stdout == "zookeeper is not running\r\n"
+
+   - name: Check kafka service
+     sudo_user: emusr
+     raw: service kafka status
+     register: kf
+     ignore_errors: true
+
+   - debug: msg="{{ kf.stdout }}"
+
+#- name: Start kafka service if not started already
+#  sudo_user: emusr
+#  raw: service kafka start
+#  when: kf.service.stdout == "kafka is not running\n" or kf.service.stdout == "kafka is not running\r\n"
+
+   - name: executing the block
+     sudo_user: emusr
+     block:
+         - name: sending the mail
+           local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka Deployment Succes notification"
+                     body=" kafka deployment successfully done in {{ ansible_nodename }}"
+           delegate_to: localhost
+     when: zk.stdout == "zookeeper is running\n" and kf.stdout == "kafka is running\n"
+     ignore_errors: true
+

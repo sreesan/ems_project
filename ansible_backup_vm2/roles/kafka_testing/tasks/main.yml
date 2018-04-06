@@ -1,0 +1,17 @@
+---
+- name: getting kafka tar file
+  copy: src={{ kafka_version }}.tgz  dest=/opt/ems/kafka mode=755
+
+- name: registering the file 
+  stat:
+    path: /opt/ems/kafka/kafka_2.12-0.11.0.1
+  register: stat_result
+  
+- name: untar the file if it doesn't exist
+  unarchive: src=/opt/ems/kafka/{{ kafka_version }}.tgz  dest=/opt/ems/kafka
+  when: stat_result.stat.exists == False
+
+#- name: untar the kafka install file
+#  raw: "tar -xvfz /opt/ems/kafka/{{ kafka_version }}.tgz"
+#unarchive: src=/opt/ems/kafka/{{ kafka_version }}.tgz  dest=/opt/ems/kafka
+...

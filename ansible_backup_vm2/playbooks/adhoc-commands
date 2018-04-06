@@ -1,0 +1,27 @@
+
+
+
+To get modules list using command line use below is the command
+# ansible-doc -l | more
+To find list of available modules
+# ansible-doc -l | wc -l
+To find perticular module 
+# ansible-doc -s yum(module name)
+To get output in single line 
+# ansible -m ping all -o
+To get group servers pinging 
+# ansible -m ping dev
+To find mount points in remote systems as well as to find kernel version
+# ansible -m all shell -a “uname -a;df -h”
+To install apache package using command line to remote hosts
+# ansible -m all yum -a “name=httpd state=present”
+To install apache package using command line to remote hosts for sudo users
+# ansible -m all yum -a “name=httpd state=present” -s
+To install apache package using command line to remote hosts
+# ansible -m all service -a “name=httpd state=started”
+To install apache package using command line to remote hosts for sudo users
+# ansible -m all service -a “name=httpd state=started” -s
+To copy files from server to remote systems 
+# ansible -m dev copy -a “src=/root dest=/tmp”
+
+

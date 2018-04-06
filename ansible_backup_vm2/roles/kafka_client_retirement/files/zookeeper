@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# Purpose: This script starts and stops the Zookeeper daemon
+#
+# chkconfig: - 90 10
+# description:  Zookeeper daemon
+
+### BEGIN INIT INFO
+# Provides:          zookeeper
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $network $local_fs $remote_fs
+# Should-Start:      
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Controls Zookeeper as a Service
+### END INIT INFO
+
+# Where you extracted the Solr distribution bundle
+ZK_INSTALL_DIR="/opt/ems/kafka/current"
+ZOOKEEPER_PIDFILE=/opt/ems/kafka/current/zookeeper.pid
+
+if [ ! -d "$ZK_INSTALL_DIR" ]; then
+  echo "$ZK_INSTALL_DIR not found! Please check the ZK_INSTALL_DIR setting in your $0 script."
+  exit 1
+fi
+
+# Specify the user to run Zookeeper as; if not set, then Zookeeper will run as root.
+# Running Zookeeper as root is not recommended for production environments
+#-------------RUNAS="solr"
+
+case "$1" in
+  start|stop|status)
+    ZK_CMD="$1"
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit
+esac
+           # Create pid file
+     if [ $ZK_CMD = status ]; then
+ 	[[ -f $ZOOKEEPER_PIDFILE ]] && [[ `ps -ef|grep zookeeper.properties|grep -v grep|grep current | wc -l` -eq 1 ]] && echo "zookeeper is running"
+#        [[ ! -f $ZOOKEEPER_PIDFILE ]] && echo "zookeeper is not running"
+	[[ `ps -ef|grep zookeeper.properties|grep -v grep|grep current | wc -l` -eq 0 ]]  && echo "zookeeper is not running"
+	exit 0
+     fi
+
+     if [ $ZK_CMD = start ]; then
+        if [ -f $ZOOKEEPER_PIDFILE ]; then
+                read ppid < $ZOOKEEPER_PIDFILE
+                if [ `ps --pid $ppid 2> /dev/null | grep -c $ppid 2> /dev/null` -eq '1' ]; then
+                        echo -n "zookeeper is already running"
+                        failure
+                        echo
+                        return 1
+                else
+                      rm -f $ZOOKEEPER_PIDFILE
+                fi
+        fi
+     fi
+
+   cd $ZK_INSTALL_DIR
+#   su -c "${ZK_INSTALL_DIR}/bin/zookeeper-server-${ZK_CMD}.sh -daemon ${ZK_INSTALL_DIR}/config/zookeeper.properties" - kafka
+   su -c "cd ${ZK_INSTALL_DIR}; bin/zookeeper-server-${ZK_CMD}.sh -daemon ${ZK_INSTALL_DIR}/config/zookeeper.properties" - emusr
+   [[ $ZK_CMD = start ]] && ps -ef|grep zookeeper.properties|grep -v grep|grep current|awk '{print $2}' > $ZOOKEEPER_PIDFILE
+   [[ $ZK_CMD = stop ]] && sleep 5 && [[ `ps -ef|grep zookeeper.properties|grep -v grep|grep current|awk '{print $2}' | wc -l` -eq 1 ]] && kill -9 `cat $ZOOKEEPER_PIDFILE`
+   [[ $ZK_CMD = stop ]] && rm -rf $ZOOKEEPER_PIDFILE
+exit 0
+

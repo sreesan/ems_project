@@ -1,0 +1,28 @@
+
+
+
+---
+ - hosts: vm1
+   tasks:
+#   - name: updating the server
+#     raw: yum update -y
+
+   - name: setting epel repositories
+     raw: yum install epel-release -y
+
+   - name: installing docker
+     raw: yum install docker -y
+
+#   - name: starting docker service
+#     raw:  systemctl docker start
+
+   - name: starting docker daemon
+     shell: systemctl start docker.service
+
+   - name: pulling docker images
+     shell: docker pull ubuntu
+
+   - name: creating docker containers
+     shell: docker run -dti --name=test  ubuntu /bin/bash
+...
+

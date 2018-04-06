@@ -1,0 +1,9 @@
+- name: start zookeeper service 
+  sudo_user: emusr
+  raw: service zookeeper start
+
+#- name: Start kafka service if not started already
+#  sudo_user: emusr
+#  raw: service kafka start
+ 
+ 

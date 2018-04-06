@@ -1,0 +1,9 @@
+
+
+
+---
+ - hosts: localhost 
+   tasks:
+   - name: data container
+     docker: image=ubuntu name=test detach=False state=running
+

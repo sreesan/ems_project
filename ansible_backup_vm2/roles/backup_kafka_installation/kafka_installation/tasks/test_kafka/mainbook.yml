@@ -1,0 +1,9 @@
+
+
+--- 
+ - hosts: localgroup 
+   user: root
+   sudo: yes
+   serial: 1
+   roles:
+      - kafka

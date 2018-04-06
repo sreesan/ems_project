@@ -1,0 +1,11 @@
+
+
+---
+ - hosts: dev1
+   tasks:
+   - name: removing elasticsearch
+     yum: name=elasticsearch state=absent
+
+   - name: removing els home dir from etc
+     file: path=/etc/elasticsearch state=absent
+...

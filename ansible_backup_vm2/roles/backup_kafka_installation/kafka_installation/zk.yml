@@ -1,0 +1,11 @@
+---
+ - hosts: all
+   tasks: 
+   - name: check zookeeper service
+     sudo_user: emusr
+     raw: service zookeeper status
+     register: zk
+     ignore_errors: true
+    
+   - debug: msg="{{ zk }}"
+

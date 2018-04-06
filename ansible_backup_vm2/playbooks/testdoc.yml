@@ -1,0 +1,12 @@
+
+
+
+---
+ - hosts: dev1
+   tasks:
+   - name: create cent container
+     docker:
+      name: my_cent
+      image: docker.io/centos
+
+

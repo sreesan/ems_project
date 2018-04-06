@@ -1,0 +1,9 @@
+---
+ - hosts: localhost
+   tasks:
+   - name: check kafka
+     raw: service kafka status
+     register: test
+     ignore_errors: true
+
+   - debug: msg="{{ test }}"   

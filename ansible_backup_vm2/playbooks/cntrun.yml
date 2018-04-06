@@ -1,0 +1,11 @@
+
+
+---
+ - hosts: ex2
+   tasks:
+   - name: redis container
+     docker: image=centos hostname=mitest name=mytest3 detach=False state=started
+
+   - name: starting container
+     shell: docker start mytest3
+...

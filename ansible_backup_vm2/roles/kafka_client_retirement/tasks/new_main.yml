@@ -1,0 +1,170 @@
+---
+- name: Check the emusr is present and display output in debug
+  sudo_user: emusr
+  raw: id emusr 
+  register: user
+  ignore_errors: true
+
+- debug: msg="{{ user.stdout }}"
+
+- name: Executing the block to send email notification if emusr is not present
+  sudo_user: emusr
+  block:
+     - name: Send the mail notification if emusr is not present 
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body="emuser not  exist in {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: user.rc >= 1
+
+     - name: Stop the playbook
+       sudo_user: emusr
+       meta: end_play
+       when: user.rc >= 1
+
+- name: Registering the variable to check kafka deployment path and send email notfication if path is not exist 
+  sudo_user: emusr
+  stat:
+    path: /opt/ems/kafka
+  register: stat_result
+
+- name: Executing the block to send mail notification if kafka deployment path is not present
+  sudo_user: emusr
+  block:
+     - name: Send the mail if deployment path is not present
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka deployment path is not present"
+                     body="kafka deployment path is not present in {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: stat_result.stat.exists == False
+
+     - name: Stop the playbook if deployment path is not present
+       sudo_user: emusr
+       meta: end_play
+       when: stat_result.stat.exists == False
+
+- name: Registering the variable to check hostname
+  sudo_user: emusr
+  raw: hostname
+  register: check_hostname
+
+- debug: msg="{{ check_hostname.stdout }}"
+
+- name: Registering variable to check zookeeper service whether the services are running or not
+  sudo_user: emusr
+  raw: service zookeeper status
+  register: zk
+  ignore_errors: true
+
+- name: Stop zookeeper services if zookeeper is already running
+  sudo_user: emusr
+  service: name=zookeeper state=stopped enabled=yes
+  when: check_hostname.stdout == "indckafka4\r\n" or check_hostname.stdout == "indckafka4\n"
+
+- name: Registering variable to check kafka service whether the services are running or not
+  sudo_user: emusr
+  raw: service kafka status
+  register: kf
+  ignore_errors: true
+
+- name: Stop kafka services if services are already running
+  sudo_user: emusr
+  service: name=kafka state=started enabled=yes
+  when: check_hostname.stdout == "indckafka4\r\n" or check_hostname.stdout == "indckafka4\n"
+
+
+- name: Unlink kafka deployment directory if link is already present
+  sudo_user: emusr
+  file:
+    src: /opt/ems/kafka/kafka/{{kafka_version}}
+    dest: /opt/ems/kafka/current
+    state: absent
+  when: check_hostname.stdout == "indckafka4\r\n" or check_hostname.stdout == "indckafka4\n" 
+
+- name: Register variable to check wether the link is present or not
+  stat: path=/opt/ems/kafka/current 
+  register: links
+
+- name: Deploying zookeeper.properties file into kafka deployment directory
+  sudo_user: emusr
+  template: src=zookeeper.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/zookeeper.properties      
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk) 
+  ignore_errors: true
+
+- name: Deploying server.properties file into kafka deployment directory
+  sudo_user: emusr
+  template: src=server.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/server.properties
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- name:  Deploying producer.properties file into kafka deployment directory
+  sudo_user: emusr
+  template: src=producer.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/producer.properties
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- name:  Deploying consumer.properties file into kafka deployment directory
+  sudo_user: emusr
+  template: src=consumer.properties.j2  dest=/opt/ems/kafka/{{ kafka_version }}/config/consumer.properties
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- name: Stop zookeeper services from existing kafka cluster servers
+  service: name=zookeeper  state=stopped 
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+
+- name: Restart zookeeper services after removing client from kafka cluster
+  service: name=zookeeper state=started  enabled=yes
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- name: Stop kafka services from existing kafka cluster servers
+  service: name=kafka  state=stopped
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+
+- name: Reloading systemctl daemon to start kafka
+  raw: systemctl daemon-reload
+
+- name: Restart kafka services after removing client from kafka cluster
+  sudo_user: emusr
+  service: name=kafka state=started enabled=yes
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- name: Register variable and check zookeeper status to send email notification
+  sudo_user: emusr 
+  raw: service zookeeper status
+  register: zk_start
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- debug: msg="{{ zk_start.stdout }}"
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+
+- name:  Register variable and check kafka status to send email notification
+  sudo_user: emusr
+  raw: service kafka status
+  register: kf_start
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+  ignore_errors: true
+
+- debug: msg="{{ kf_start.stdout }}"
+  when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+
+- name: Executing the block to send mail notification if the kafka client retirement process is done successfully
+  sudo_user: emusr
+  block:
+     - name: Send an email after kafka client retirement process is done successfully
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka client retirement process success notificarion"
+                     body="kafka client retirement process is done successfully and kafka and zookeeper services are running on {{ ansible_nodename }}"
+       delegate_to: localhost
+       when: (check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n") and (links.stat.islnk is defined and links.stat.islnk) and (kf_start.stdout == "kafka is running\r\n" or kf_start.stdout == "kafka is running\n") and (zk_start.stdout == "zookeeper is running\r\n" or zk_start.stdout == "zookeeper is running\n")
+
+

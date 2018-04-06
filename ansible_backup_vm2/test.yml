@@ -1,0 +1,12 @@
+
+
+
+---
+ - mail:
+   host: 127.0.0.1
+   port: 2025
+   subject: Ansible-report
+   body: Hello, this is an e-mail. I hope you like it ;-)
+   from: sreenu@synopsys.com
+   to: sreenu@synopsys.com
+   delegate_to: localhost

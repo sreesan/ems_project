@@ -1,0 +1,25 @@
+---
+- name: stop kafka
+  service: name=kafka  state=stopped
+
+- name: stop zookeeper
+  service: name=zookeeper state=stopped
+   
+- name: remove kafka logile
+  file: path=/SCRATCH/kafka/kafka-logs  state=absent
+
+- name: remove zookeeper service file
+  file: path=/etc/init.d/zookeeper  state=absent
+
+- name: remove kafka file
+  file: path=/etc/init.d/kafka  state=absent 
+
+- name: unlink
+  sudo_user: emusr
+  file:
+     src: /opt/ems/kafka/kafka_2.12-0.11.0.1
+     dest: /opt/ems/kafka/current
+     state: absent 
+
+- name: remove kafka deploy path
+  file: path=/opt/ems/kafka  state=absent 

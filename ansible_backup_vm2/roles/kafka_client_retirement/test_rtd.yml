@@ -1,0 +1,41 @@
+---
+ - hosts: all
+   tasks:
+   - name: Check hostname
+     sudo_user: emusr
+     raw: hostname
+     register: check_hostname
+
+   - debug: msg="{{ check_hostname.stdout }}"
+ 
+   - name: Check zookeeper service
+     sudo_user: emusr
+     raw: service zookeeper status
+     register: zk
+     ignore_errors: true
+
+   - debug: msg="{{ zk }}"
+
+   - name: stop zookeeper services if zookeeper is already running
+     sudo_user: emusr
+     service: name=zookeeper state=stopped enabled=yes
+#     raw: service zookeeper stop
+     when: check_hostname.stdout == "indckafka4\r\n" or check_hostname.stdout == "indckafka4\n" 
+
+   - name: Check kafka service
+     sudo_user: emusr
+     raw: service kafka status
+     register: kf
+     ignore_errors: true
+
+   - debug: msg="{{ kf }}"
+
+   - name: stop kafka service if services are already running
+     sudo_user: emusr
+     service: name=kafka state=stopped enabled=yes
+#     raw: service kafka stop
+     when: check_hostname.stdout == "indckafka4\r\n" or check_hostname.stdout == "indckafka4\n"
+
+
+
+

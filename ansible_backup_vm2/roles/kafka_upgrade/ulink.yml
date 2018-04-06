@@ -1,0 +1,11 @@
+---
+ - hosts: indckafka4
+   tasks:
+   - name: unlink the latest version if services are not running with new version
+     sudo_user: emusr
+     file:
+       src: /opt/ems/kafka/kafka_2.12-0.11.0.1
+       dest: /opt/ems/kafka/current
+       state: absent
+     
+

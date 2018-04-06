@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# Purpose: This script starts and stops the Kafka broker daemon
+#
+# chkconfig: - 90 10
+# description:  Kafka daemon
+
+### BEGIN INIT INFO
+# Provides:          kafka
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $network $local_fs $remote_fs
+# Should-Start:      
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Controls Kafka as a Service
+### END INIT INFO
+
+# Where you extracted the Solr distribution bundle
+KFK_INSTALL_DIR="/opt/ems/kafka/current"
+KAFKA_PIDFILE=/opt/ems/kafka/current/kafka.pid
+
+if [ ! -d "$KFK_INSTALL_DIR" ]; then
+  echo "$KFK_INSTALL_DIR not found! Please check the KFK_INSTALL_DIR setting in your $0 script."
+  exit 1
+fi
+
+# Specify the user to run kafka as; if not set, then kafka will run as root.
+# Running kafka as root is not recommended for production environments
+#-------------RUNAS="solr"
+
+case "$1" in
+  start|stop|status)
+    KFK_CMD="$1"
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit
+esac
+
+           # Create pid file
+     if [ $KFK_CMD = status ]; then
+	[[ -f $KAFKA_PIDFILE ]] && [[ `ps -ef|grep server.properties|grep -v grep|grep current | wc -l` -eq 1 ]] && echo "kafka is running"
+	[[ `ps -ef|grep server.properties|grep -v grep|grep current | wc -l` -eq 0 ]]  && echo "kafka is not running"
+	exit 0
+     fi
+
+     if [ $KFK_CMD = start ]; then
+        if [ -f $KAFKA_PIDFILE ]; then
+                read ppid < $KAFKA_PIDFILE
+                if [ `ps --pid $ppid 2> /dev/null | grep -c $ppid 2> /dev/null` -eq '1' ]; then
+                        echo -n "kafka is already running"
+                        failure
+                        echo
+                        return 1
+                else
+                      rm -f $KAFKA_PIDFILE
+                fi
+        fi
+     fi
+
+   cd $KFK_INSTALL_DIR
+#   su -c "${KFK_INSTALL_DIR}/bin/kafka-server-${KFK_CMD}.sh -daemon ${KFK_INSTALL_DIR}/config/server.properties" - kafka
+   su -c "cd ${KFK_INSTALL_DIR}; bin/kafka-server-${KFK_CMD}.sh -daemon ${KFK_INSTALL_DIR}/config/server.properties" - emusr
+   [[ $KFK_CMD = start ]] && ps -ef|grep server.properties|grep -v grep|grep current|awk '{print $2}' > $KAFKA_PIDFILE
+   [[ $KFK_CMD = stop ]] && sleep 5 && [[ `ps -ef|grep server.properties|grep -v grep|grep current|awk '{print $2}' | wc -l` -eq 1 ]] && kill -9 `cat $KAFKA_PIDFILE`
+   [[ $KFK_CMD = stop ]] && rm -rf $KAFKA_PIDFILE
+exit 0
+

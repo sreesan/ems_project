@@ -1,0 +1,16 @@
+
+
+
+
+
+--- 
+ - hosts: dev1
+   tasks:
+      - name: list contents of directory
+        command: ls /root/mydir
+        register: contents
+
+      - name: check contents for emptiness
+        debug: msg="Directory is empty"
+        when: contents.stdout == ""
+

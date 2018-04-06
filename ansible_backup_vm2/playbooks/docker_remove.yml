@@ -1,0 +1,25 @@
+
+
+
+---
+ - hosts: localhost , dev1
+   tasks:
+   - name: stoping docker containers
+     shell: docker stop test
+     ignore_errors: true
+
+   - name: removing container called test
+     shell: docker rm testi
+     ignore_errors: true
+
+   - name: removing images
+     shell: docker rmi ubuntu
+     ignore_errors: true
+
+   - name: removing docker in all the hosts
+     shell: yum remove docker -y
+     ignore_errors: true
+
+   - name: removing docker home directory
+     file: path=/var/lib/docker state=absent
+...

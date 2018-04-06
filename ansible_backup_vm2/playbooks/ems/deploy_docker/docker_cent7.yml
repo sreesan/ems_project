@@ -1,0 +1,29 @@
+
+
+
+---
+ - hosts: kafka
+   tasks:
+   - name: install docker in rhel7
+     copy: src=/etc/ansible/playbooks/ems/deploy_docker/docker_cent7.py  dest=/root
+
+   - name: setting file permissions to python script file
+     file: path=/root/docker_cent7.py mode=0777
+      
+   - name: execute python script
+     shell: python /root/docker_cent7.py
+
+   - name: starting docker daemon
+     shell: systemctl start docker.service
+ 
+   - name: pulling docker images
+     shell: docker pull ubuntu
+
+   - name: creating docker containers
+     shell: docker run -dti --name=docker  ubuntu /bin/bash
+
+
+#   - name: removing python script from remote server
+#     file: path=/root/docker_cent7.py state=absent
+
+...

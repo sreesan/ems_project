@@ -1,0 +1,37 @@
+
+---
+- name: tar file from files
+  copy: src=docker-17.09.0-ce.tgz  dest=/opt/ems/docker  mode=755 owner=dockers group=dockers
+
+- name: registering the file
+  sudo_user: dockers
+  stat:
+    path: /opt/ems/docker/docker
+  register: stat_result
+  ignore_errors: true
+
+- name: untar the file if it doesn't exist
+  sudo_user: dockers
+  unarchive: src=/opt/ems/docker/docker-17.09.0-ce.tgz  dest=/opt/ems/docker owner=dockers
+  when: stat_result.stat.exists == False
+  ignore_errors: true
+
+- name: copy files from docker to bin configuration setup file
+  sudo_user: dockers
+  shell: cp -rf /opt/ems/docker/docker/* /usr/bin
+
+- name: Check docker service
+  sudo_user: dockers
+  shell: ps -ef|grep -v grep | grep docker|wc -l
+  register: result
+
+- debug: msg="{{result.stdout}}"
+
+- name: Start docker if not started already
+  sudo_user: dockers
+  shell: ./dockerd
+  args:
+    chdir: /opt/ems/docker/docker
+  when: result.stdout == "0"
+
+

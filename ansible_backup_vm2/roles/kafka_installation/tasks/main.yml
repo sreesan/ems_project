@@ -1,0 +1,61 @@
+
+---
+
+- name: Deploying config files into kafka  config directory
+  sudo_user: emusr
+  template: src={{item}}.j2  dest=/opt/ems/kafka/{{kafka_version}}/config/{{item}}     
+  with_items:
+          - zookeeper.properties
+          - server.properties
+          - producer.properties
+          - consumer.properties
+
+- name: Stop kafka services if services are running 
+  service: name=kafka  state=stopped enabled=yes
+
+- name: Stop zookeeper status if services are running 
+  service: name=zookeeper  state=stopped enabled=yes
+
+- name: Start zookeeper service if zookeeper services are already not started 
+  sudo_user: emusr
+  service: name=zookeeper  state=started enabled=yes
+
+- name: Registering variable to check kafka service after deploy all the configuration files into deploy directory
+  sudo_user: emusr
+  raw: service kafka status
+  register: kf
+  ignore_errors: true
+
+- name: Start kafka service if services are already not started 
+  sudo_user: emusr
+  service: name=kafka  state=started  enabled=yes
+
+- name: Registering variable to store zookeeper services status after starting zookeeper services 
+  sudo_user: emusr
+  raw: service zookeeper status
+  register: zk_start
+  ignore_errors: true
+
+- debug: msg="{{ zk_start.stdout }}"
+
+- name: Registering variable to store kafka services status after starting kafka services
+  sudo_user: emusr
+  raw: service kafka status
+  register: kf_start
+  ignore_errors: true
+
+- debug: msg="{{ kf_start.stdout }}"
+
+- name: Executing the block to send email notifcation after deploying kafka successfully
+  sudo_user: emusr
+  block:
+     - name: Send an email if kafka deployment process is done successfully
+       local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka Deployment Succes notification"
+                     body=" kafka deployment successfully done in {{ ansible_nodename }}"
+       delegate_to: localhost
+  when: zk_start.stdout == "zookeeper is running\r\n" or zk_start.stdout == "zookeeper is running\n" and  (kf_start.stdout == "kafka is running\r\n" or kf_start.stdout == "kafka is running\n") 
+  ignore_errors: true
+  

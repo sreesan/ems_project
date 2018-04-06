@@ -1,0 +1,10 @@
+
+
+---
+ - hosts: dev1
+   tasks:
+   - name: pulling docker images
+     shell: docker pull ubuntu
+
+   - name: creating docker containers
+     shell: docker run -dti --name=ansidocker -p 81:80 ubuntu /bin/bash

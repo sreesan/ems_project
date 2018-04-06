@@ -1,0 +1,11 @@
+
+
+
+---
+ - hosts: localhost
+   tasks:
+   - name: creates docker containers
+     docker:
+       name: ansi
+       image: docker.io/ubuntu 
+       state: started

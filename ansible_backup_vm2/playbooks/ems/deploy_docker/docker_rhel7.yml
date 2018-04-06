@@ -1,0 +1,33 @@
+
+
+---
+ - hosts: rhel
+   tasks: 
+  
+   -   name: Install python setup tools
+       yum: name=python-setuptools
+
+   -   name: Install Pypi
+       easy_install: name=pip
+
+   -   name: Install docker-py
+       pip: name=docker-py
+
+   -   name: setting docker repository
+       copy: src=/etc/ansible/playbooks/ems/deploy_docker/docker.repo  dest=/etc/yum.repos.d
+
+   -   name: Install Docker
+       yum: name=docker-engine state=installed
+
+   -   name: Make sure Docker is running
+       service: name=docker state=started
+
+   -   name: enabling docker service
+       shell: systemctl start docker && systemctl enable docker
+
+   -   name: pulling docker images
+       shell: docker pull centos
+
+   -   name: running docker container on centos
+       shell: docker run -dti --name=test -p 9010:80 centos /bin/bash  
+...

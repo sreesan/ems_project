@@ -1,0 +1,55 @@
+---
+ - hosts: all
+#   strategy: debug
+   gather_facts: yes
+   tasks:
+   - name: check zookeeper service file whether the file is exist or not
+     stat: 
+       path: /etc/init.d/zookeeper
+     register: zk_result
+ 
+   - debug: msg="{{ zk_result }}" 
+   
+   - name: Check zookeeper service
+     raw: service zookeeper status
+     register: check_zk
+     when: zk_result.stat.exists == True
+     failed_when: false
+     no_log: True
+     ignore_errors: true
+
+   - debug: msg="{{ check_zk.stdout }}"
+     when: zk_result.stat.exists == True
+
+   - name: executing the block to send mail  alerts if zookeeper service is already running in server
+     sudo_user: emusr
+     block:
+         - name: send mail if zookeeper is already running in server
+           local_action: mail
+                  to="sreenu@synopsys.com"
+                  from="sreenu@synopsys.com"
+                  subject="Kafka installation notification"
+                  body="zookeeper is already running in {{ ansible_nodename }} and playbook has been stopped due to zookeeper service is already running"
+           delegate_to: localhost
+           when: zk_result.stat.exists == True and check_zk.stdout == "zookeeper is running\n" or check_zk.stdout == "zookeeper is running\r\n" 
+           ignore_errors: true
+
+         - name: end the playbook if zookeeper service is already running
+           sudo_user: emusr
+           meta: end_play
+           when: zk_result.stat.exists == True and check_zk.stdout == "zookeeper is running\r\n" or check_zk.stdout == "zookeeper is running\n"
+           ignore_errors: true
+
+   - name: check zookeeper service file whether the file is exist or not
+     stat:
+       path: /etc/init.d/kafka
+     register: zk_result
+           
+   - name: check kafka service
+     raw: service kafka status
+     register: check_kf
+     when: kf_result.stat.exists == True
+
+   - debug: msg="{{ check_kf.stdout }}"
+     when: kf_result.stat.exists == True
+

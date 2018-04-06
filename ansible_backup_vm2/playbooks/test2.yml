@@ -1,0 +1,8 @@
+---
+- hosts: all
+  tasks:
+  - name: Creating The File
+    file: path=/mnt/demo  state=touch
+  - name: Creating The Directory
+    file: path=/tmp/test state=directory
+

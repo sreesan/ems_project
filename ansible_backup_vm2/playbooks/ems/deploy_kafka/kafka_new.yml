@@ -1,0 +1,29 @@
+
+
+---
+ - hosts:
+   tasks:
+   - name: getting kafka tar file
+     copy: src=/etc/ansible/playbooks/ems/deploy_kafka/kafka_2.12-0.11.0.1  dest=/opt/ems/kafka
+
+   - name: removing zookeeper.properties configuration file
+     shell: rm -rf /opt/ems/kafka/kafka_2.12-0.11.0.1/config/zookeeper.properties 
+
+   - name: removing server.properties file   
+     shell: rm -rf /opt/ems/kafka/kafka_2.12-0.11.0.1/config/server.properties 
+
+   - name: removing producer.properties file
+     shell: rm -rf /opt/ems/kafka/kafka_2.12-0.11.0.1/config/consumer.properties 
+
+   - name: removing consumer.properties file    
+     shell: rm -rf /opt/ems/kafka/kafka_2.12-0.11.0.1/config/producer.properties
+
+   - name: copying custom configuration files into kafka cluster configuration file
+     copy: src=/etc/ansible/playbooks/ems/deploy_kafka/   dest=/opt/ems/kafka/kafka_2.12-0.11.0.1/config
+
+   - name: start and test zookeeper server
+     script: sh zk.sh 
+
+   - name: start and test kafka server
+     script: 
+...

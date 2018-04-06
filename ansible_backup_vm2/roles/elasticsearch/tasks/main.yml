@@ -1,0 +1,69 @@
+---
+# tasks file for elasticsearch
+
+- name: getting tar file from files
+  sudo_user: elasticsearch
+  copy: src=elasticsearch-5.6.3.tar.gz  dest=/opt/ems/els
+
+#- name: changing owner as elasticsearch
+#  shell: chown -R elasticsearch:elasticsearch /opt/ems/els/elasticsearch-5.6.3.tar.gz
+#- name: Create / Change owner of /apps.                                                                                                                                         
+- name: registering the file
+  sudo_user: elasticsearch
+  stat:
+    path: /opt/ems/els/elasticsearch-5.6.3
+  register: stat_result
+  ignore_errors: true
+
+
+- name: untar the file 
+  sudo_user: elasticsearch
+  unarchive: src=/opt/ems/els/elasticsearch-5.6.3.tar.gz   dest=/opt/ems/els mode=777 owner=elasticsearch
+  when: stat_result.stat.exists == False
+  ignore_errors: true
+
+- name: registering the file
+  sudo_user: elasticsearch
+  stat:
+    path: "/opt/ems/els/elasticsearch-5.6.3"
+  register: stat_result1
+  ignore_errors: true
+
+- name: Change permissions and owner of file.                                         
+ # sudo: yes
+  file:
+    path: /opt/ems/els/elasticsearch-5.6.3
+    mode: 0755
+    owner: elasticsearch
+    group: lance
+    recurse: yes
+  #  when: stat_result1.stat.exists == True
+
+- name: registering the file
+  sudo_user: elasticsearch
+  stat:
+    path: /opt/ems/elasticsearch/elasticsearch-5.6.3/config
+  register: stat_result
+  ignore_errors: true
+
+- name: deploying config while 
+  sudo_user: elasticsearch
+  template: src=elasticsearch.yml.j2  dest=/opt/ems/els/elasticsearch-5.6.3/config/elasticsearch.yml
+  when: stat_result.stat.exists == False
+
+- name: Check elasticsearch process
+  sudo_user: elasticsearch
+  shell: ps -ef|grep -v grep | grep elasticsearch-5.6.3|wc -l
+  register: result
+
+- debug: msg="{{result.stdout}}" 
+
+- name: Start elasticsearch if not started already
+  sudo_user: "elasticsearch"
+  script: els.sh
+  #shell: bin/elasticsearch
+  #args:
+   # chdir: /opt/ems/els/elasticsearch-5.6.3/
+  when: result.stdout == "0"
+...
+

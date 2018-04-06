@@ -1,0 +1,7 @@
+
+
+---
+ - hosts: in01-kafka-servers 
+   roles:
+     - kafka
+   

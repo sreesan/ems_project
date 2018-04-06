@@ -1,0 +1,8 @@
+---
+ - hosts: all
+   tasks:
+   - name: find hostnames
+     raw: "{{ ansible_nodename }}"
+     register: hostvar
+
+   - debug: msg="{{ hostvar.stdout }}"

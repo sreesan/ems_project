@@ -1,0 +1,16 @@
+---
+ - hosts: all
+   tasks:
+   - name: stop zookeeper service
+     raw: service zookeeper status
+#     service: name=zookeeper  state=started enabled=yes
+     register: zk
+   
+   - debug: msg="{{ zk }}" 
+
+   - name: stop kafka service
+     raw: service kafka status
+#     service: name=kafka  state=restarted enabled=yes
+     register: kf
+
+   - debug: msg="{{ kf }}"

@@ -1,0 +1,10 @@
+
+--- 
+ - hosts: cloud
+   tasks:
+   - name: declaring varible
+   - hosts: all
+     vars:
+      password: sree123456
+   - name: calling passwd varibale from tasks
+     - user: name=ec2-user password="{{password}}"

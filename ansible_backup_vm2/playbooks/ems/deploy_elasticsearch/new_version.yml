@@ -1,0 +1,28 @@
+
+
+---
+ - hosts: localhost
+   tasks:
+#   - name: updating new client to setup elasticsearch
+#     raw: yum update -y
+
+   - name: installing java1.8
+     raw: yum install java-1.8.0-openjdk.x86_64 -y
+
+   - name: installing wget command
+     raw: yum install wget -y
+
+   - name: downloading els
+     raw: wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.1.tar.gz
+
+   - name: untar the file
+     raw: tar -xvf elasticsearch-5.6.1.tar.gz
+
+   - name: mvong elasticsearch-5.6.1 to opt
+     shell: mv elasticsearch-5.6.1 /opt
+
+   - name: starting elasticsearch 
+     shell: elasticsearch-5.6.1/bin/elasticsearch
+...
+
+

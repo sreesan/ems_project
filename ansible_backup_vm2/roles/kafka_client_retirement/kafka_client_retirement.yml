@@ -1,0 +1,9 @@
+
+
+---
+ - hosts: all 
+   sudo: emusr
+   serial: 1
+   roles:
+     - kafka_client_retirement
+   

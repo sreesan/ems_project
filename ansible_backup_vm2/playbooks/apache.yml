@@ -1,0 +1,12 @@
+
+---
+
+ - hosts: all
+   tasks:
+    - name: installing httpd package
+      yum: pkg=httpd  service=started enabled=yes
+      
+...
+
+
+

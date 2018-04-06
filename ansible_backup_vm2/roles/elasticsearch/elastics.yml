@@ -1,0 +1,7 @@
+
+---
+ - hosts: dev-servers 
+   sudo_user: elasticsearch
+   roles:
+     - elasticsearch
+

@@ -1,0 +1,8 @@
+
+
+---
+ - hosts: all
+   tasks:
+   - name: install tree command
+     yum: name=tree  state=installed
+...

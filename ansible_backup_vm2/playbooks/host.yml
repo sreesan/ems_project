@@ -1,0 +1,13 @@
+
+
+
+---
+ - hosts: all
+   gather_facts: false
+   tasks:
+    - name: Get hostname
+      command: /bin/hostname
+      register: my_hostname
+
+    - debug: var=my_hostname
+

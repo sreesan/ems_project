@@ -1,0 +1,18 @@
+
+
+
+---
+ - hosts: localhost
+   tasks:
+   - name: Execute Shell to catpture the information of all the servers
+     shell: /usr/bin/sh ./test.sh
+
+   - name: moving testoutput.log file into /mnt dir
+     shell: mv /tmp/logs/testoutput.log  /mnt
+
+   - name: remove all the file from /tmp/logs dir
+     file: path=/tmp/logs/*  state=absent
+
+   - name: moving testoutput.log file from /mnt to /tmp
+     shell: mv /mnt/testoutput.log  /tmp/logs 
+...

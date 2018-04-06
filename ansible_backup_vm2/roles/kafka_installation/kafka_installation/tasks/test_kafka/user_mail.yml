@@ -1,0 +1,28 @@
+--- # sending mail when user not exist
+  - hosts: localgroup
+    user: root
+    sudo: yes
+    serial: 1
+    tasks:
+     - name: checking the user
+       raw: id emuser
+       register: user
+       ignore_errors: true
+     - debug: msg="{{ user }}"
+     - name: executing the block
+       block:
+          - name: sending the mail
+            local_action: mail
+                          to="sreenu@synopsys.com"
+                          from="sreenu@synopsys.com"
+                          subject="Test mail"
+                          body=" emuser not  exist in {{ ansible_nodename }}"
+            delegate_to: localhsot
+          - name: end the playbook
+            meta: end_play
+       when: user.rc >= 1
+     - debug: msg="display the user"
+                          
+
+     - name: create test file
+       file: path=/root/mailtest  state=touch

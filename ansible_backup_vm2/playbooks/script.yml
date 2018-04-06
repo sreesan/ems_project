@@ -1,0 +1,11 @@
+
+
+
+
+
+---
+ - hosts: vm1
+   tasks:
+   - name: executing script
+     script: /etc/ansible/playbooks/python/date.py
+...

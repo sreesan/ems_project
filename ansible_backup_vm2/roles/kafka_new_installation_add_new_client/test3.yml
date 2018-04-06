@@ -1,0 +1,18 @@
+--- #configure the servers
+ - hosts: all
+   user: root
+   tasks:
+      # tasks file for configure-servers
+    - name: checking the /etc/security/limits.conf exist or not...
+      stat: path=/etc/security/limits.confs
+      register: file
+
+    - name: sorry !/etc/security/limits.confs does not exist, ...
+      lineinfile:
+           line: "In {{ ansible_nodename }} the file /etc/security/limits.confs not exi\
+st \n"
+           insertafter: EOF
+#           dest: configure-status.doc
+      delegate_to: 127.0.0.1
+      when: file.stat.exists == False
+

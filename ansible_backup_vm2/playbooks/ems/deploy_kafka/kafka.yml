@@ -1,0 +1,54 @@
+
+
+---
+ - hosts: localhost
+   tasks:
+#   - name: just updating the server
+#     raw: sudo yum update -y
+
+   - name: installing java1.8 in remote servers
+     raw: sudo yum install java-1.8.0-openjdk.x86_64 -y
+  
+   - name: Update bashrc for PythonBrew for foo user
+     lineinfile:
+        dest=/etc/profile
+        line="export JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk"
+
+   - name: Update bashrc for PythonBrew for user
+     lineinfile:
+        dest=/etc/profile
+        line="export JRE_HOME=/usr/lib/jvm/jre"
+
+   - name: reload profile file to put our changes into effect
+     raw: source /etc/profile
+     ignore_errors: true
+
+   - name: installing wget command
+     raw: yum install wget -y
+
+   - name: downloading kafka
+     raw: wget http://www-us.apache.org/dist/kafka/0.9.0.1/kafka_2.11-0.9.0.1.tgz
+
+   - name: untar the kafka file
+     raw: tar -xvf kafka_2.11-0.9.0.1.tgz
+     ignore_errors: true
+
+   - name: moving kafka file into opt dir
+     shell: mv kafka_2.11-0.9.0.1 /opt
+
+   - name: Start zookeeper
+   - script: /opt/kafka_2.11-0.9.0.1/bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
+     ignore_errors: true
+
+   - name: modifying configuration file of kafka server
+     replace:
+       path: /opt/kafka_2.11-0.9.0.1/bin/kafka-server-start.sh
+       regexp: "^export KAFKA_HEAP_OPTS=-Xmx1G -Xms1G"
+       line: "export KAFKA_HEAP_OPTS=-Xmx256M -Xms128M"
+       ignore_errors: true
+
+   - name: starting kafka server
+   - script: /opt/kafka_2.11-0.9.0.1/bin/kafka-server-start.sh config/server.properties 
+     
+
+...

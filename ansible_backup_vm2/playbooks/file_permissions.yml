@@ -1,0 +1,13 @@
+
+
+---
+ - hosts: devservers
+   tasks:
+   - name: Creating the files with permissions 
+     file:
+     path: /tmp/test
+     state: touch
+     owner: root
+     group: root
+     mode: 0644
+

@@ -1,0 +1,15 @@
+---
+ - hosts: all
+   tasks: 
+   - name: check zk service
+     raw: service zookeeper status
+     register: zk
+    
+   - debug: msg="{{ zk }}"
+
+   - name: check kf service
+     raw: service kafka status
+     register: kf
+
+   - debug: msg="{{ kf }}"
+ 

@@ -1,0 +1,6 @@
+---
+ - hosts: localhost
+   tasks:
+   - name: appending all logs into a single file
+#     shell: find /tmp/logs -type f | while read filename; do cat $filename >> /tmp/logs/testoutput.log;  >> /tmp/logs/testoutput.log;   >> /tmp/logs/testoutput.log; done
+     shell: find /tmp/logs -name '*.log'| while read filename; do cat $filename >> /tmp/logs/testoutput.log;   done

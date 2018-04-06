@@ -1,0 +1,42 @@
+---
+ - hosts: all
+   gather_facts: False
+   tasks: 
+   - name: Register variable to check wether the link is present or not
+     stat: path=/opt/ems/kafka/current
+     register: links
+
+   - name: check host
+     raw: hostname
+     register: check_hostname 
+
+   - name: check zookeeper status
+     raw: service zookeeper status
+     register: zk_start
+     when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+     ignore_errors: true
+
+   - debug: msg="{{ zk_start }}"
+
+   - name:  Register variable and check kafka status to send email notification
+     sudo_user: emusr
+     raw: service kafka status
+     register: kf_start
+     when: check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n" and (links.stat.islnk is defined and links.stat.islnk)
+     ignore_errors: true
+
+   - debug: msg="{{ kf_start }}"
+
+   - name: Executing the block to send mail notification if the kafka client retirement process is done successfully
+     sudo_user: emusr
+     block:
+       - name: Send an email after kafka client retirement process is done successfully
+         local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka client retirement process success notificarion"
+                     body="kafka client retirement process is done successfully and kafka and zookeeper services are running on {{ ansible_nodename }}"
+         delegate_to: localhost
+         when: (check_hostname.stdout != "indckafka4\r\n" or check_hostname.stdout != "indckafka4\n") and (links.stat.islnk is defined and links.stat.islnk) and (kf_start.stdout == "kafka is running\n" or kf_start.stdout == "kafka is running\r\n") and (zk_start.stdout == "zookeeper is running\r\n" or zk_start.stdout == "zookeeper is running\n")
+         ignore_errors: true
+

@@ -1,0 +1,82 @@
+---
+ - hosts: all
+#- name: check kafka services
+   tasks:
+   - name: checking the user
+     sudo_user: emusr
+     raw: id emusr
+     register: user
+     ignore_errors: true
+
+   - debug: msg="{{ user }}"
+
+   - name: executing the block
+     sudo_user: emusr
+     block:
+        - name: sending the mail
+          local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body="emuser not  exist in {{ ansible_nodename }}"
+          delegate_to: localhost
+          when: user.rc >= 1
+
+        - name: end the playbook
+          sudo_user: emusr
+          meta: end_play
+          when: user.rc >= 1
+
+   - debug: msg="{{ user }}"
+
+   - name: Check zookeeper service
+     sudo_user: emusr
+     shell: service zookeeper status
+     register: zk
+     ignore_errors: true
+
+   - debug: msg="{{ zk }}"
+
+   - name: executing the block
+     sudo_user: emusr
+     block:
+       - name: sending the mail
+         local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body="zookeeper service is already running in {{ ansible_nodename }}"
+         delegate_to: localhost
+         when: zk.rc == 0
+
+       - name: end the playbook
+         sudo_user: emusr
+         meta: end_play
+         when: zk.rc == 0
+
+
+   - name: Check kafka service
+     sudo_user: emusr
+     shell: service kafka status
+     register: kf
+     ignore_errors: true
+
+   - debug: msg="{{ kf }}"
+
+   - name: executing the block
+     sudo_user: emusr
+     block:
+       - name: sending the mail
+         local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka installation notification"
+                     body="kafka service is already running in {{ ansible_nodename }}"
+         delegate_to: localhost
+         when: kf.rc == 0
+
+       - name: end the playbook
+         sudo_user: emusr
+         meta: end_play
+
+

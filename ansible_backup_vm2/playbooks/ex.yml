@@ -1,0 +1,21 @@
+
+
+
+---
+ - hosts: ex
+   tasks:
+   - name: copying python file into remote server
+     copy: src=/etc/ansible/playbooks/python/docker_cent6.yml  dest=/root 
+  
+   - name: executing python script to install docker on centos6
+     shell: python docker_cent6.yml 
+
+   - name: pulling docker images
+     shell: docker pull ubuntu
+
+   - name: creating docker containers on ubuntu
+     shell: docker run -dti --name test -p 99:80 ubuntu /bin/bash
+ 
+   - name: removing python file
+     shell: rm -rf /root/docker_cent6.yml
+...

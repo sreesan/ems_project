@@ -1,0 +1,18 @@
+---
+# tasks file for webserver
+
+- name: deploy webserver on remote hosts
+  yum: pkg=httpd  state=installed
+
+- name: start httpd serveice
+  service: name=httpd  state=started
+
+- name: deploy webapp in remote hosts
+  copy: src=index.html  dest=/var/www/html
+
+- name: restart service
+  service: name=httpd  state=restarted
+
+
+
+

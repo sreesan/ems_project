@@ -1,0 +1,32 @@
+---
+ - hosts: all
+   tasks:
+   - name: Check zookeeper service
+     sudo_user: emusr
+     raw: service zookeeper status
+     register: zk.service
+     ignore_errors: true
+
+#   - debug: msg="{{ zk.service }}"
+
+   - name: Check kafka service
+     sudo_user: emusr
+     shell: service kafka status
+     register: kf.service
+     ignore_errors: true
+
+#   - debug: msg="{{ kf.service }}"
+
+   - name: executing the block to send success notification
+     sudo_user: emusr
+     block:
+        - name: sending the mail regarding the new client addition into kafka cluster
+          local_action: mail
+                     to="sreenu@synopsys.com"
+                     from="sreenu@synopsys.com"
+                     subject="Kafka Deployment Succes notification"
+                     body="added new client into kafka cluster and modification done in {{ ansible_nodename }}"
+          delegate_to: localhost
+     when: zk.service.stdout == "zookeeper is running\r\n" and  kf.service.stdout == "kafka is running\r\n"
+     ignore_errors: true
+

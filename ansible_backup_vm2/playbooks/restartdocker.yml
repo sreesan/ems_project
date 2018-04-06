@@ -1,0 +1,10 @@
+
+---
+ - hosts: dev1
+   tasks:
+   - name: restart app servers
+     docker:
+       name: {{ "item" }}
+       state: restarted
+     with_items: all_containers
+

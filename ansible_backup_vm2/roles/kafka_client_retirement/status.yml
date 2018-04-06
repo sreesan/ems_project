@@ -1,0 +1,29 @@
+---
+ - hosts: all
+   serial: 1
+   tasks: 
+   - name: finding hostname
+     sudo_user: emusr
+     raw: hostname
+     register: host
+
+   - debug: msg="{{ host.stdout }}"
+
+   - name: Register variable and check zookeeper status to send email notification
+     sudo_user: emusr
+     raw: service zookeeper status
+     register: zk_start
+     when: host.stdout != "indckafka4\r\n" or host.stdout != "indckafka4\n" 
+     ignore_errors: true
+
+   - debug: msg="{{ zk_start }}"
+
+   - name:  Register variable and check kafka status to send email notification
+     sudo_user: emusr
+     raw: service kafka status
+     register: kf_start
+     when: host.stdout != "indckafka4\r\n" or host.stdout != "indckafka4\n"
+     ignore_errors: true
+
+   - debug: msg="{{ kf_start }}"
+

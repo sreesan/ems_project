@@ -1,0 +1,5 @@
+zookeeperconnect: in01devmonvm1.internal.synopsys.com:2181,in01devmonvm2.internal.synopsys.com:2181,indckafka4.internal.synopsys.com:2181
+kafka_version: kafka_2.12-1.0.0 
+kafka_old_version: kafka_2.12-0.11.0.1
+
+

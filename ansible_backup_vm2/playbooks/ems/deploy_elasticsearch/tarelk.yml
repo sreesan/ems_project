@@ -1,0 +1,19 @@
+
+
+---
+ - hosts: elk 
+   tasks:
+   - name: copying elasticsearch package 
+     get_url: 
+       url: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.1.tar.gz
+       dest: /opt
+
+   - name: extracting tar file using below command
+     unarchive:
+       src: /opt/elasticsearch-5.6.1.tar.gz
+       dest: /opt
+       remote_src: yes
+
+   - name: starting el
+     shell: /opt./bin/elasticsearch
+...

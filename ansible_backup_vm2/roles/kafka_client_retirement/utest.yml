@@ -1,0 +1,10 @@
+---
+ - hosts: all
+   tasks:
+   - name: checking the user
+     sudo_user: emusr
+     raw: id emusr
+     register: user
+     ignore_errors: true
+
+   - debug: msg="{{ user }}"
